@@ -1,6 +1,6 @@
 /*
  * Ported from the QMK `glassbricks` keymap for the wired Halcyon Kyria rev4.
- * Source of truth: qmk_userspace/keyboards/splitkb/halcyon/kyria/keymaps/glassbricks/keymap.c
+ * From: qmk_userspace/keyboards/splitkb/halcyon/kyria/keymaps/glassbricks/keymap.c
  */
 
 #include <behaviors.dtsi>
@@ -12,10 +12,9 @@
 #include <dt-bindings/zmk/rgb.h>
 
 /*
- * Layer order is the priority mechanism: ZMK scans active layers from the
- * highest index down. MAC sits below GAME and every momentary layer so that it
- * can only rewrite positions BASE owns, and so GAME's explicit &kp LCTRL wins
- * over it.
+ * Layers and layer order.
+ *
+ * The MAC and associated layers swap meta and ctrl.
  */
 #define BASE    0
 #define MAC     1
@@ -28,14 +27,9 @@
 #define MAC_EXT 8
 #define MAC_FUN 9
 
-/*
- * `#binding-cells` cannot be written inside a function-like macro body: the
- * preprocessor reads a bare `#` there as the stringize operator. Object-like
- * macros carry no such restriction.
- */
 #define BINDING_CELLS_0 #binding-cells = <0>
 
-/* QMK's custom_shift_keys[]: shift is a no-op on these keys. */
+/* Shift is a no-op on these keys. */
 #define NOSHIFT(NAME, KEY) \
     NAME: NAME { \
         compatible = "zmk,behavior-mod-morph"; \
@@ -76,17 +70,10 @@
         NOSHIFT(ns_n8, N8)
         NOSHIFT(ns_n9, N9)
         NOSHIFT(ns_n0, N0)
-        NOSHIFT(ns_minus, MINUS)
-        NOSHIFT(ns_equal, EQUAL)
         NOSHIFT(ns_lbkt, LBKT)
         NOSHIFT(ns_rbkt, RBKT)
-        NOSHIFT(ns_bslh, BSLH)
-        NOSHIFT(ns_semi, SEMI)
-        NOSHIFT(ns_comma, COMMA)
-        NOSHIFT(ns_dot, DOT)
-        NOSHIFT(ns_fslh, FSLH)
 
-        /* QMK FUN_NUM: momentary FUN, or NUM when shifted. */
+        /* Mo FUN, or NUM when shifted. */
         fun_num: fun_num {
             compatible = "zmk,behavior-mod-morph";
             #binding-cells = <0>;
@@ -95,7 +82,7 @@
             keep-mods = <(MOD_LSFT|MOD_RSFT)>;
         };
 
-        /* QMK W_BSPC: W, but backspace while alt is held. */
+        /* W_BSPC: W, but backspace while alt is held. */
         w_bspc: w_bspc {
             compatible = "zmk,behavior-mod-morph";
             #binding-cells = <0>;
@@ -103,16 +90,16 @@
             mods = <(MOD_LALT|MOD_RALT)>;
         };
 
-        /* QMK NUM_BLS = LT(_NUM, KC_BSLS) with hold-on-other-key-press. */
+        /* Mo NUM; KC_BSLS on tap. */
         num_bsls: num_bsls {
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
             flavor = "hold-preferred";
             tapping-term-ms = <150>;
-            bindings = <&mo>, <&ns_bslh>;
+            bindings = <&mo>, <&kp>;
         };
 
-        /* QMK SPC_EXT = LT(_EXT, KC_SPC). */
+        /* Mo _EXT, KC_SPC on tap. */
         spc_ext: spc_ext {
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
@@ -121,16 +108,33 @@
             bindings = <&mo>, <&kp>;
         };
 
+        /*
+         * Entering GAME clears ctrl/meta swap. Re-toggle MAC when leaving game.
+         * MAC is locked by `&tog`, so only a locking behavior can clear it.
+         */
+        tog_off: tog_off {
+            compatible = "zmk,behavior-toggle-layer";
+            #binding-cells = <1>;
+            toggle-mode = "off";
+            locking;
+        };
+
+        game_tog: game_tog {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&tog GAME &tog_off MAC>;
+        };
+
         game_spc: game_spc {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&tog GAME &kp SPACE>;
+            bindings = <&tog GAME &tog_off MAC &kp SPACE>;
         };
 
         game_ret: game_ret {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&tog GAME &kp ENTER>;
+            bindings = <&tog GAME &tog_off MAC &kp ENTER>;
         };
 
         inc_dec_scroll: inc_dec_scroll {
@@ -146,17 +150,17 @@
         base_layer {
             display-name = "BASE";
             bindings = <
-&kp TAB    &kp Q  &kp W  &kp F  &kp P  &kp B                                                                  &kp J     &kp L      &kp U      &kp Y     &ns_semi  &kp C_MUTE
-&kp ESC    &kp A  &kp R  &kp S  &kp T  &kp G                                                                  &kp M     &kp N      &kp E      &kp I     &kp O     &ns_minus
-&kp LCTRL  &kp Z  &kp X  &kp C  &kp D  &kp V  &kp SPACE  &key_repeat        &mo EXT   &kp UNDER               &kp K     &kp H      &ns_comma  &ns_dot   &kp SQT   &kp ENTER
-                                &kp LGUI  &kp LALT  &kp LSFT  &mo EXT  &num_bsls NUM 0      &fun_num  &kp SPACE  &mo SYM  &kp RALT  &mo ADJ
+&kp TAB    &kp Q  &kp W  &kp F  &kp P  &kp B                                                                  &kp J     &kp L      &kp U      &kp Y     &kp SEMI  &kp C_MUTE
+&kp ESC    &kp A  &kp R  &kp S  &kp T  &kp G                                                                  &kp M     &kp N      &kp E      &kp I     &kp O     &kp MINUS
+&kp LCTRL  &kp Z  &kp X  &kp C  &kp D  &kp V  &kp SPACE  &key_repeat        &mo EXT   &kp UNDER               &kp K     &kp H      &kp COMMA  &kp DOT   &kp SQT   &kp ENTER
+                                &kp LGUI  &kp LALT  &kp LSFT  &mo EXT  &num_bsls NUM BSLH      &fun_num  &kp SPACE  &mo SYM  &kp RALT  &mo ADJ
 
 &none  &none  &none  &none  &none                                                                             &none  &none  &none  &none  &none
             >;
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN>;
         };
 
-        /* Ctrl/Meta swap. Only rewrites positions BASE owns. */
+        /* Ctrl/Meta swap. */
         mac_layer {
             display-name = "MAC";
             bindings = <
@@ -175,8 +179,8 @@
             bindings = <
 &trans     &trans  &w_bspc  &trans  &trans  &trans                                                    &trans  &trans  &trans  &trans  &trans  &trans
 &kp ESC    &trans  &trans   &trans  &trans  &trans                                                    &trans  &trans  &trans  &trans  &trans  &trans
-&kp LCTRL  &trans  &trans   &trans  &trans  &trans  &kp BSPC  &ns_bslh       &mo EXT  &trans          &trans  &trans  &trans  &trans  &trans  &game_ret
-                                    &tog GAME  &tog GAME  &kp LSFT  &kp SPACE  &kp LALT       &mo FUN  &game_spc  &tog GAME  &tog GAME  &tog GAME
+&kp LCTRL  &trans  &trans   &trans  &trans  &trans  &kp BSPC  &kp BSLH       &mo EXT  &trans          &trans  &trans  &trans  &trans  &trans  &game_ret
+                                    &game_tog  &game_tog  &kp LSFT  &kp SPACE  &kp LALT       &mo FUN  &game_spc  &game_tog  &game_tog  &game_tog
 
 &trans  &trans  &trans  &trans  &trans                                                                &trans  &trans  &trans  &trans  &trans
             >;
@@ -186,10 +190,10 @@
         num_layer {
             display-name = "NUM";
             bindings = <
-&tog GAME  &tog GAME  &kp LT    &kp GT    &ns_minus  &kp AT                                                     &kp PIPE   &ns_n4  &ns_n5  &ns_n6  &trans     &trans
-&kp BSPC   &kp EXCL   &kp STAR  &ns_fslh  &ns_equal  &kp HASH                                                   &kp TILDE  &ns_n1  &ns_n2  &ns_n3  &ns_n0     &trans
-&trans     &ns_bslh   &kp PLUS  &ns_lbkt  &ns_rbkt   &kp CARET  &trans  &trans        &ns_comma  &trans          &kp DLLR   &ns_n7  &ns_n8  &ns_n9  &ns_comma  &trans
-                                          &trans  &trans  &trans  &spc_ext EXT SPACE  &trans        &ns_dot  &trans  &trans  &trans  &trans
+&game_tog  &game_tog  &kp LT    &kp GT    &kp MINUS  &kp AT                                                     &kp PIPE   &ns_n4  &ns_n5  &ns_n6  &trans     &trans
+&kp BSPC   &kp EXCL   &kp STAR  &kp FSLH  &kp EQUAL  &kp HASH                                                   &kp TILDE  &ns_n1  &ns_n2  &ns_n3  &ns_n0     &trans
+&trans     &kp BSLH   &kp PLUS  &ns_lbkt  &ns_rbkt   &kp CARET  &trans  &trans        &kp COMMA  &trans          &kp DLLR   &ns_n7  &ns_n8  &ns_n9  &kp COMMA  &trans
+                                          &trans  &trans  &trans  &spc_ext EXT SPACE  &trans        &kp DOT  &trans  &trans  &trans  &trans
 
 &trans  &trans  &trans  &trans  &trans                                                                          &trans  &trans  &trans  &trans  &trans
             >;
@@ -199,9 +203,9 @@
         sym_layer {
             display-name = "SYM";
             bindings = <
-&trans    &ns_grave  &kp LT    &kp GT    &ns_minus  &kp AT                                                      &kp PIPE   &kp PRCNT  &kp QMARK  &kp AMPS  &ns_semi  &trans
-&kp BSPC  &kp EXCL   &kp STAR  &ns_fslh  &ns_equal  &kp HASH                                                    &kp TILDE  &kp COLON  &kp LPAR   &kp RPAR  &kp RBRC  &trans
-&trans    &ns_bslh   &kp PLUS  &ns_lbkt  &ns_rbkt   &kp CARET  &kp UNDER  &trans        &trans  &trans          &kp DLLR   &kp LBRC   &ns_comma  &ns_dot   &kp DQT   &trans
+&trans    &ns_grave  &kp LT    &kp GT    &kp MINUS  &kp AT                                                      &kp PIPE   &kp PRCNT  &kp QMARK  &kp AMPS  &kp SEMI  &trans
+&kp BSPC  &kp EXCL   &kp STAR  &kp FSLH  &kp EQUAL  &kp HASH                                                    &kp TILDE  &kp COLON  &kp LPAR   &kp RPAR  &kp RBRC  &trans
+&trans    &kp BSLH   &kp PLUS  &ns_lbkt  &ns_rbkt   &kp CARET  &kp UNDER  &trans        &trans  &trans          &kp DLLR   &kp LBRC   &kp COMMA  &kp DOT   &kp DQT   &trans
                                          &trans  &trans  &trans  &spc_ext EXT SPACE  &trans        &trans  &trans  &trans  &trans  &trans
 
 &trans  &trans  &trans  &trans  &trans                                                                          &trans  &trans  &trans  &trans  &trans
@@ -212,7 +216,7 @@
         ext_layer {
             display-name = "EXT";
             bindings = <
-&trans   &tog GAME  &kp TAB    &trans     &tog MAC    &kp LC(B)                                              &kp PG_UP  &kp HOME  &kp UP     &kp END    &kp PSCRN  &trans
+&trans   &game_tog  &kp TAB    &trans     &tog MAC    &kp LC(B)                                              &kp PG_UP  &kp HOME  &kp UP     &kp END    &kp PSCRN  &trans
 &trans   &sk LGUI   &sk LALT   &sk LSFT   &sk LCTRL   &kp LC(A)                                              &kp PG_DN  &kp LEFT  &kp DOWN   &kp RIGHT  &kp DEL    &trans
 &mo FUN  &kp LC(Z)  &kp LC(X)  &kp LC(C)  &kp TAB     &kp LC(V)  &trans  &trans        &trans  &trans        &caps_word &kp BSPC  &kp K_APP  &trans     &kp INS    &trans
                                           &trans  &trans  &trans  &trans  &trans        &trans  &trans  &trans  &trans  &trans

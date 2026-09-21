@@ -1,9 +1,18 @@
 /*
+ * Right side has soldered encoder.
  * left_soldered_encoder and right_soldered_encoder are declared on the same
  * halcyon_conn pins, so the soldered encoder can only be enabled from a
- * side-specific overlay -- doing it in the shared .keymap would enable it on
- * both builds.
+ * side-specific overlay.
  */
 &right_soldered_encoder {
     status = "okay";
+
+    /* A/B swapped: the shield's pin order turns this encoder the wrong way. */
+    a-gpios = <&halcyon_conn 13 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+    b-gpios = <&halcyon_conn 12 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+
+    /*
+     * This encoder emits 2 pulses per detent, not the default assumes.
+     */
+    steps = <40>;
 };

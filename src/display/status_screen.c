@@ -41,9 +41,6 @@ LV_IMG_DECLARE(Forest);
 #define GAME_LAYER_NAME "GAME"
 #define MAC_LAYER_NAME "MAC"
 
-#define MESSAGE_LEN 12
-#define MESSAGE_HOLD_MS 5000
-
 static lv_obj_t *battery_canvas;
 static lv_obj_t *mode_canvas;
 static lv_obj_t *profile_canvas;
@@ -60,24 +57,7 @@ static struct {
     int profile;
     bool game;
     bool mac;
-    char message[MESSAGE_LEN];
 } screen;
-
-static void draw_profile_region(void);
-
-static void clear_message(struct k_work *work) {
-    screen.message[0] = '\0';
-    draw_profile_region();
-}
-
-static K_WORK_DELAYABLE_DEFINE(clear_message_work, clear_message);
-
-static void set_message(const char *message) {
-    strncpy(screen.message, message, sizeof(screen.message) - 1);
-    screen.message[sizeof(screen.message) - 1] = '\0';
-    k_work_reschedule_for_queue(zmk_display_work_q(), &clear_message_work,
-                                K_MSEC(MESSAGE_HOLD_MS));
-}
 
 static const char *endpoint_symbol(struct zmk_endpoint_instance endpoint) {
     switch (endpoint.transport) {
@@ -132,26 +112,30 @@ static void draw_mode_region(void) {
 
     lv_canvas_fill_bg(mode_canvas, CANVAS_BACKGROUND, LV_OPA_COVER);
 
-    char text[16];
-    snprintf(text, sizeof(text), "%s%s", screen.game ? "GAME" : "BASE",
-             screen.mac ? "  MAC" : "");
-
     lv_draw_label_dsc_t label_dsc;
     init_label_dsc(&label_dsc, CANVAS_FOREGROUND, &lv_font_montserrat_16, LV_TEXT_ALIGN_LEFT);
-    canvas_draw_text(mode_canvas, 0, 0, CANVAS_SIZE, &label_dsc, text);
+    canvas_draw_text(mode_canvas, 0, 0, CANVAS_SIZE, &label_dsc, screen.game ? "GAME" : "BASE");
+
+    /*
+     * A second line: "GAME MAC" in montserrat_16 is 93px, wider than the 88px
+     * canvas, so a single line wraps the "MAC" out from under the visible strip.
+     */
+    if (screen.mac) {
+        lv_draw_label_dsc_t mac_dsc;
+        init_label_dsc(&mac_dsc, CANVAS_FOREGROUND, &lv_font_unscii_8, LV_TEXT_ALIGN_LEFT);
+        canvas_draw_text(mode_canvas, 0, 18, CANVAS_SIZE, &mac_dsc, "MAC");
+    }
 
     rotate_canvas(mode_canvas);
 }
 
 static void draw_profile_region(void) {
     static int last_profile = -1;
-    static char last_message[MESSAGE_LEN];
 
-    if (screen.profile == last_profile && strcmp(screen.message, last_message) == 0) {
+    if (screen.profile == last_profile) {
         return;
     }
     last_profile = screen.profile;
-    strcpy(last_message, screen.message);
 
     lv_canvas_fill_bg(profile_canvas, CANVAS_BACKGROUND, LV_OPA_COVER);
 
@@ -161,12 +145,6 @@ static void draw_profile_region(void) {
     lv_draw_label_dsc_t label_dsc;
     init_label_dsc(&label_dsc, CANVAS_FOREGROUND, &lv_font_montserrat_16, LV_TEXT_ALIGN_LEFT);
     canvas_draw_text(profile_canvas, 0, 0, CANVAS_SIZE, &label_dsc, text);
-
-    if (screen.message[0] != '\0') {
-        lv_draw_label_dsc_t message_dsc;
-        init_label_dsc(&message_dsc, CANVAS_FOREGROUND, &lv_font_unscii_8, LV_TEXT_ALIGN_LEFT);
-        canvas_draw_text(profile_canvas, 0, 18, CANVAS_SIZE, &message_dsc, screen.message);
-    }
 
     rotate_canvas(profile_canvas);
 }
@@ -210,16 +188,8 @@ static struct output_view output_get_state(const zmk_event_t *eh) {
 }
 
 static void output_update_cb(struct output_view state) {
-    bool profile_changed = state.profile != screen.profile;
-
     screen.endpoint_symbol = state.symbol;
     screen.profile = state.profile;
-
-    if (profile_changed) {
-        char message[MESSAGE_LEN];
-        snprintf(message, sizeof(message), "BT %d", state.profile + 1);
-        set_message(message);
-    }
 
     draw_battery_region();
     draw_profile_region();
@@ -258,20 +228,10 @@ static struct mode_view mode_get_state(const zmk_event_t *eh) {
 }
 
 static void mode_update_cb(struct mode_view state) {
-    static bool primed;
-
-    if (primed && state.mac != screen.mac) {
-        set_message(state.mac ? "SWAP ON" : "SWAP OFF");
-    } else if (primed && state.game != screen.game) {
-        set_message(state.game ? "GAME ON" : "GAME OFF");
-    }
-    primed = true;
-
     screen.game = state.game;
     screen.mac = state.mac;
 
     draw_mode_region();
-    draw_profile_region();
 }
 
 ZMK_DISPLAY_WIDGET_LISTENER(hlc_mode, struct mode_view, mode_update_cb, mode_get_state)
@@ -288,14 +248,14 @@ lv_obj_t *zmk_display_status_screen(void) {
     lv_canvas_set_buffer(battery_canvas, battery_buf, CANVAS_SIZE, CANVAS_SIZE,
                          CANVAS_COLOR_FORMAT);
 
-    mode_canvas = lv_canvas_create(root);
-    lv_obj_align(mode_canvas, LV_ALIGN_TOP_LEFT, 24, 0);
-    lv_canvas_set_buffer(mode_canvas, mode_buf, CANVAS_SIZE, CANVAS_SIZE, CANVAS_COLOR_FORMAT);
-
     profile_canvas = lv_canvas_create(root);
-    lv_obj_align(profile_canvas, LV_ALIGN_TOP_LEFT, 44, 0);
+    lv_obj_align(profile_canvas, LV_ALIGN_TOP_LEFT, 24, 0);
     lv_canvas_set_buffer(profile_canvas, profile_buf, CANVAS_SIZE, CANVAS_SIZE,
                          CANVAS_COLOR_FORMAT);
+
+    mode_canvas = lv_canvas_create(root);
+    lv_obj_align(mode_canvas, LV_ALIGN_TOP_LEFT, 44, 0);
+    lv_canvas_set_buffer(mode_canvas, mode_buf, CANVAS_SIZE, CANVAS_SIZE, CANVAS_COLOR_FORMAT);
 
     lv_obj_t *art = lv_img_create(root);
     lv_image_set_src(art, &Forest);

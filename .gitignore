@@ -5,3 +5,4 @@
 /result
 /zephyr/*
 !/zephyr/module.yml
+/compile_commands.json
