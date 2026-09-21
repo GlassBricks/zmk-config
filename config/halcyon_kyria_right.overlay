@@ -1,0 +1,9 @@
+/*
+ * left_soldered_encoder and right_soldered_encoder are declared on the same
+ * halcyon_conn pins, so the soldered encoder can only be enabled from a
+ * side-specific overlay -- doing it in the shared .keymap would enable it on
+ * both builds.
+ */
+&right_soldered_encoder {
+    status = "okay";
+};

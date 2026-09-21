@@ -1,0 +1,11 @@
+config HLC_STATUS_SCREEN
+    bool "Custom Halcyon e-paper status screen"
+    depends on ZMK_DISPLAY
+    select LV_USE_CANVAS
+    select LV_USE_IMAGE
+    select LV_FONT_MONTSERRAT_16
+    select LV_FONT_UNSCII_8
+    help
+      Replaces the stock mod_display_epaper status screen with one that only
+      redraws on slow-changing state. Requires CONFIG_HALCYON_EPAPER_WIDGET_STATUS=n
+      so that the stock zmk_display_status_screen() is not also compiled in.

@@ -1,0 +1,7 @@
+/.west
+/modules
+/zmk
+/build
+/result
+/zephyr/*
+!/zephyr/module.yml

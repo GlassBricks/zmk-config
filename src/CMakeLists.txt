@@ -1,0 +1,8 @@
+if(CONFIG_HLC_STATUS_SCREEN)
+  zephyr_library()
+  zephyr_library_include_directories(${CMAKE_SOURCE_DIR}/include)
+  zephyr_library_sources(display/status_screen.c)
+  zephyr_library_sources(display/canvas.c)
+  zephyr_library_sources(display/bolt.c)
+  zephyr_library_sources(display/art_forest.c)
+endif()
