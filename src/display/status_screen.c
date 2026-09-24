@@ -1,12 +1,5 @@
 /*
  * Custom e-paper status screen.
- *
- * Refresh discipline is the whole point of this file: a partial refresh of the
- * SSD1680 costs a second or so of current, so every draw_* recomputes what it
- * would render, compares it against the previous value and returns early when
- * nothing changed. In particular the mode region derives only from whether the
- * GAME and MAC layers are active, so holding NUM/SYM/EXT/FUN/ADJ fires the
- * layer event but redraws nothing.
  */
 
 #include <zephyr/kernel.h>
@@ -30,28 +23,32 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/keymap.h>
 #include <zmk/usb.h>
 
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING)
+#include <zmk/split/central.h>
+#define PERIPHERAL_SOURCE 0
+#endif
+
 #include "canvas.h"
 
 LV_IMG_DECLARE(Forest);
 
-/*
- * Matched against the keymap's `display-name`s rather than layer indices, so
- * that renumbering layers in the keymap cannot silently desync this file.
- */
 #define GAME_LAYER_NAME "GAME"
 #define MAC_LAYER_NAME "MAC"
 
+#define PERCENT_FIELD_RIGHT 65
+#define SUFFIX_FIELD_LEFT 68
+
 static lv_obj_t *battery_canvas;
+static lv_obj_t *battery2_canvas;
 static lv_obj_t *mode_canvas;
-static lv_obj_t *profile_canvas;
 
 static uint8_t battery_buf[CANVAS_BUF_SIZE];
+static uint8_t battery2_buf[CANVAS_BUF_SIZE];
 static uint8_t mode_buf[CANVAS_BUF_SIZE];
-static uint8_t profile_buf[CANVAS_BUF_SIZE];
 
-/* Only ever touched from the display work queue. */
 static struct {
     uint8_t battery;
+    uint8_t peripheral_battery;
     bool charging;
     const char *endpoint_symbol;
     int profile;
@@ -73,6 +70,19 @@ static const char *endpoint_symbol(struct zmk_endpoint_instance endpoint) {
     }
 }
 
+static void draw_percent_and_suffix(lv_obj_t *canvas, const char *percent, const char *suffix) {
+    lv_draw_label_dsc_t label_dsc;
+
+    if (percent != NULL) {
+        init_label_dsc(&label_dsc, CANVAS_FOREGROUND, &lv_font_montserrat_16, LV_TEXT_ALIGN_RIGHT);
+        canvas_draw_text(canvas, 0, 0, PERCENT_FIELD_RIGHT, &label_dsc, percent);
+    }
+
+    init_label_dsc(&label_dsc, CANVAS_FOREGROUND, &lv_font_montserrat_16, LV_TEXT_ALIGN_LEFT);
+    canvas_draw_text(canvas, SUFFIX_FIELD_LEFT, 0, CANVAS_SIZE - SUFFIX_FIELD_LEFT, &label_dsc,
+                     suffix);
+}
+
 static void draw_battery_region(void) {
     static uint8_t last_battery = UINT8_MAX;
     static bool last_charging;
@@ -89,15 +99,39 @@ static void draw_battery_region(void) {
     lv_canvas_fill_bg(battery_canvas, CANVAS_BACKGROUND, LV_OPA_COVER);
     draw_battery(battery_canvas, screen.battery, screen.charging);
 
-    char text[16];
-    snprintf(text, sizeof(text), "%u%% %s", screen.battery,
-             screen.endpoint_symbol ? screen.endpoint_symbol : "");
-
-    lv_draw_label_dsc_t label_dsc;
-    init_label_dsc(&label_dsc, CANVAS_FOREGROUND, &lv_font_montserrat_16, LV_TEXT_ALIGN_RIGHT);
-    canvas_draw_text(battery_canvas, 0, 0, CANVAS_SIZE, &label_dsc, text);
+    char percent[8];
+    snprintf(percent, sizeof(percent), "%u%%", screen.battery);
+    draw_percent_and_suffix(battery_canvas, percent,
+                            screen.endpoint_symbol ? screen.endpoint_symbol : "");
 
     rotate_canvas(battery_canvas);
+}
+
+static void draw_battery2(void) {
+    static int last_profile = -1;
+    static uint8_t last_peripheral_battery = UINT8_MAX;
+
+    if (screen.profile == last_profile && screen.peripheral_battery == last_peripheral_battery) {
+        return;
+    }
+    last_profile = screen.profile;
+    last_peripheral_battery = screen.peripheral_battery;
+
+    lv_canvas_fill_bg(battery2_canvas, CANVAS_BACKGROUND, LV_OPA_COVER);
+
+    char profile[8];
+    snprintf(profile, sizeof(profile), "B%d", screen.profile + 1);
+
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING)
+    draw_battery(battery2_canvas, screen.peripheral_battery, false);
+    char percent[8];
+    snprintf(percent, sizeof(percent), "%u%%", screen.peripheral_battery);
+    draw_percent_and_suffix(battery2_canvas, percent, profile);
+#else
+    draw_percent_and_suffix(battery2_canvas, NULL, profile);
+#endif
+
+    rotate_canvas(battery2_canvas);
 }
 
 static void draw_mode_region(void) {
@@ -112,65 +146,51 @@ static void draw_mode_region(void) {
 
     lv_canvas_fill_bg(mode_canvas, CANVAS_BACKGROUND, LV_OPA_COVER);
 
+    char text[16];
+    snprintf(text, sizeof(text), "%s%s", screen.game ? "GAME" : "BASE", screen.mac ? " swp" : "");
+
     lv_draw_label_dsc_t label_dsc;
     init_label_dsc(&label_dsc, CANVAS_FOREGROUND, &lv_font_montserrat_16, LV_TEXT_ALIGN_LEFT);
-    canvas_draw_text(mode_canvas, 0, 0, CANVAS_SIZE, &label_dsc, screen.game ? "GAME" : "BASE");
-
-    /*
-     * A second line: "GAME MAC" in montserrat_16 is 93px, wider than the 88px
-     * canvas, so a single line wraps the "MAC" out from under the visible strip.
-     */
-    if (screen.mac) {
-        lv_draw_label_dsc_t mac_dsc;
-        init_label_dsc(&mac_dsc, CANVAS_FOREGROUND, &lv_font_unscii_8, LV_TEXT_ALIGN_LEFT);
-        canvas_draw_text(mode_canvas, 0, 18, CANVAS_SIZE, &mac_dsc, "MAC");
-    }
+    canvas_draw_text(mode_canvas, 0, 0, CANVAS_SIZE, &label_dsc, text);
 
     rotate_canvas(mode_canvas);
 }
 
-static void draw_profile_region(void) {
-    static int last_profile = -1;
-
-    if (screen.profile == last_profile) {
-        return;
-    }
-    last_profile = screen.profile;
-
-    lv_canvas_fill_bg(profile_canvas, CANVAS_BACKGROUND, LV_OPA_COVER);
-
-    char text[16];
-    snprintf(text, sizeof(text), "BT %d", screen.profile + 1);
-
-    lv_draw_label_dsc_t label_dsc;
-    init_label_dsc(&label_dsc, CANVAS_FOREGROUND, &lv_font_montserrat_16, LV_TEXT_ALIGN_LEFT);
-    canvas_draw_text(profile_canvas, 0, 0, CANVAS_SIZE, &label_dsc, text);
-
-    rotate_canvas(profile_canvas);
-}
 
 struct battery_view {
     uint8_t percent;
+    uint8_t peripheral_percent;
     bool charging;
 };
 
 static struct battery_view battery_get_state(const zmk_event_t *eh) {
-    return (struct battery_view){
+    struct battery_view view = {
         .percent = zmk_battery_state_of_charge(),
 #if IS_ENABLED(CONFIG_USB_DEVICE_STACK)
         .charging = zmk_usb_is_powered(),
 #endif
     };
+
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING)
+    zmk_split_central_get_peripheral_battery_level(PERIPHERAL_SOURCE, &view.peripheral_percent);
+#endif
+
+    return view;
 }
 
 static void battery_update_cb(struct battery_view state) {
     screen.battery = state.percent;
+    screen.peripheral_battery = state.peripheral_percent;
     screen.charging = state.charging;
     draw_battery_region();
+    draw_battery2();
 }
 
 ZMK_DISPLAY_WIDGET_LISTENER(hlc_battery, struct battery_view, battery_update_cb, battery_get_state)
 ZMK_SUBSCRIPTION(hlc_battery, zmk_battery_state_changed);
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING)
+ZMK_SUBSCRIPTION(hlc_battery, zmk_peripheral_battery_state_changed);
+#endif
 #if IS_ENABLED(CONFIG_USB_DEVICE_STACK)
 ZMK_SUBSCRIPTION(hlc_battery, zmk_usb_conn_state_changed);
 #endif
@@ -192,7 +212,7 @@ static void output_update_cb(struct output_view state) {
     screen.profile = state.profile;
 
     draw_battery_region();
-    draw_profile_region();
+    draw_battery2();
 }
 
 ZMK_DISPLAY_WIDGET_LISTENER(hlc_output, struct output_view, output_update_cb, output_get_state)
@@ -248,18 +268,18 @@ lv_obj_t *zmk_display_status_screen(void) {
     lv_canvas_set_buffer(battery_canvas, battery_buf, CANVAS_SIZE, CANVAS_SIZE,
                          CANVAS_COLOR_FORMAT);
 
-    profile_canvas = lv_canvas_create(root);
-    lv_obj_align(profile_canvas, LV_ALIGN_TOP_LEFT, 24, 0);
-    lv_canvas_set_buffer(profile_canvas, profile_buf, CANVAS_SIZE, CANVAS_SIZE,
+    battery2_canvas = lv_canvas_create(root);
+    lv_obj_align(battery2_canvas, LV_ALIGN_TOP_LEFT, 18, 0);
+    lv_canvas_set_buffer(battery2_canvas, battery2_buf, CANVAS_SIZE, CANVAS_SIZE,
                          CANVAS_COLOR_FORMAT);
 
     mode_canvas = lv_canvas_create(root);
-    lv_obj_align(mode_canvas, LV_ALIGN_TOP_LEFT, 44, 0);
+    lv_obj_align(mode_canvas, LV_ALIGN_TOP_LEFT, 36, 0);
     lv_canvas_set_buffer(mode_canvas, mode_buf, CANVAS_SIZE, CANVAS_SIZE, CANVAS_COLOR_FORMAT);
 
     lv_obj_t *art = lv_img_create(root);
     lv_image_set_src(art, &Forest);
-    lv_obj_align(art, LV_ALIGN_TOP_LEFT, 74, 0);
+    lv_obj_align(art, LV_ALIGN_TOP_LEFT, 56 , 0);
 
     hlc_battery_init();
     hlc_output_init();

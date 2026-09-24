@@ -29,6 +29,9 @@
 
 #define BINDING_CELLS_0 #binding-cells = <0>
 
+#define SCRL_ENC_UP   MOVE_Y(200)
+#define SCRL_ENC_DOWN MOVE_Y(-200)
+
 /* Shift is a no-op on these keys. */
 #define NOSHIFT(NAME, KEY) \
     NAME: NAME { \
@@ -108,10 +111,13 @@
             bindings = <&mo>, <&kp>;
         };
 
-        /*
-         * Entering GAME clears ctrl/meta swap. Re-toggle MAC when leaving game.
-         * MAC is locked by `&tog`, so only a locking behavior can clear it.
-         */
+        tog_on: tog_on {
+            compatible = "zmk,behavior-toggle-layer";
+            #binding-cells = <1>;
+            toggle-mode = "on";
+            locking;
+        };
+
         tog_off: tog_off {
             compatible = "zmk,behavior-toggle-layer";
             #binding-cells = <1>;
@@ -141,6 +147,7 @@
             compatible = "zmk,behavior-sensor-rotate-var";
             #sensor-binding-cells = <2>;
             bindings = <&msc>, <&msc>;
+            tap-ms = <25>;
         };
     };
 
@@ -210,20 +217,20 @@
 
 &trans  &trans  &trans  &trans  &trans                                                                          &trans  &trans  &trans  &trans  &trans
             >;
-            sensor-bindings = <&inc_dec_scroll SCRL_UP SCRL_DOWN &inc_dec_scroll SCRL_UP SCRL_DOWN &inc_dec_scroll SCRL_UP SCRL_DOWN &inc_dec_scroll SCRL_UP SCRL_DOWN>;
+            sensor-bindings = <&inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP>;
         };
 
         ext_layer {
             display-name = "EXT";
             bindings = <
-&trans   &game_tog  &kp TAB    &trans     &tog MAC    &kp LC(B)                                              &kp PG_UP  &kp HOME  &kp UP     &kp END    &kp PSCRN  &trans
-&trans   &sk LGUI   &sk LALT   &sk LSFT   &sk LCTRL   &kp LC(A)                                              &kp PG_DN  &kp LEFT  &kp DOWN   &kp RIGHT  &kp DEL    &trans
-&mo FUN  &kp LC(Z)  &kp LC(X)  &kp LC(C)  &kp TAB     &kp LC(V)  &trans  &trans        &trans  &trans        &caps_word &kp BSPC  &kp K_APP  &trans     &kp INS    &trans
+&trans   &game_tog  &kp TAB    &tog_off MAC  &tog_on MAC &kp LC(B)                                              &kp PG_UP  &kp HOME  &kp UP     &kp END    &kp PSCRN  &trans
+&trans   &sk LGUI   &sk LALT   &sk LSFT      &sk LCTRL   &kp LC(A)                                              &kp PG_DN  &kp LEFT  &kp DOWN   &kp RIGHT  &kp DEL    &trans
+&mo FUN  &kp LC(Z)  &kp LC(X)  &kp LC(C)     &kp TAB     &kp LC(V)  &trans  &trans        &trans  &trans        &caps_word &kp BSPC  &kp K_APP  &trans     &kp INS    &trans
                                           &trans  &trans  &trans  &trans  &trans        &trans  &trans  &trans  &trans  &trans
 
 &trans  &trans  &trans  &trans  &trans                                                                       &trans  &trans  &trans  &trans  &trans
             >;
-            sensor-bindings = <&inc_dec_scroll SCRL_UP SCRL_DOWN &inc_dec_scroll SCRL_UP SCRL_DOWN &inc_dec_scroll SCRL_UP SCRL_DOWN &inc_dec_scroll SCRL_UP SCRL_DOWN>;
+            sensor-bindings = <&inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP>;
         };
 
         fun_layer {
@@ -242,9 +249,9 @@
         adj_layer {
             display-name = "ADJ";
             bindings = <
-&bt BT_CLR    &rgb_ug RGB_SPI  &rgb_ug RGB_HUI  &rgb_ug RGB_SAI  &rgb_ug RGB_BRI  &tog MAC                                         &msc SCRL_UP    &mkp LCLK       &mmv MOVE_UP    &mkp RCLK        &none  &bootloader
+&bootloader   &rgb_ug RGB_SPI  &rgb_ug RGB_HUI  &rgb_ug RGB_SAI  &rgb_ug RGB_BRI  &none                                            &msc SCRL_UP    &mkp LCLK       &mmv MOVE_UP    &mkp RCLK        &none  &bootloader
 &out OUT_TOG  &rgb_ug RGB_SPD  &rgb_ug RGB_HUD  &rgb_ug RGB_SAD  &rgb_ug RGB_BRD  &rgb_ug RGB_TOG                                  &msc SCRL_DOWN  &mmv MOVE_LEFT  &mmv MOVE_DOWN  &mmv MOVE_RIGHT  &none  &trans
-&trans        &trans           &trans           &rgb_ug RGB_EFR  &rgb_ug RGB_EFF  &trans           &trans  &trans  &trans  &trans  &trans          &mkp MB4        &mkp MCLK       &mkp MB5         &none  &trans
+&trans        &bt BT_CLR           &trans           &rgb_ug RGB_EFR  &rgb_ug RGB_EFF  &trans           &trans  &trans  &trans  &trans  &trans          &mkp MB4        &mkp MCLK       &mkp MB5         &none  &trans
                                                 &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4      &trans  &trans  &trans  &trans  &trans
 
 &trans  &trans  &trans  &trans  &trans                                                                                             &trans  &trans  &trans  &trans  &trans
@@ -262,7 +269,7 @@
 
 &trans  &trans  &trans  &trans  &trans                                                                &trans  &trans  &trans  &trans  &trans
             >;
-            sensor-bindings = <&inc_dec_scroll SCRL_UP SCRL_DOWN &inc_dec_scroll SCRL_UP SCRL_DOWN &inc_dec_scroll SCRL_UP SCRL_DOWN &inc_dec_scroll SCRL_UP SCRL_DOWN>;
+            sensor-bindings = <&inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP>;
         };
 
         mac_fun_layer {
