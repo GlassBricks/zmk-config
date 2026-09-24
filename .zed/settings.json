@@ -8,6 +8,55 @@
           "--header-insertion=never"
         ]
       }
+    },
+    "dts-language-server": {
+      "settings": {
+        "devicetree": {
+          "defaultBindingType": "Zephyr",
+          "autoChangeContext": true,
+          "allowAdhocContexts": false,
+          "defaultShowFormattingErrorAsDiagnostics": false,
+          "preferredContext": "left",
+          "contexts": [
+            {
+              "ctxName": "left",
+              "cwd": "${workspaceFolder}/build/ws",
+              "bindingType": "Zephyr",
+              "dtsFile": "zmk-halcyon-module/boards/splitkb/halcyon_wireless/halcyon_wireless_nrf52840_zmk.dts",
+              "overlays": [
+                "zmk-halcyon-module/boards/shields/halcyon_kyria/halcyon_kyria_left.overlay",
+                "zmk-halcyon-module/boards/shields/halcyon_kyria/boards/halcyon_wireless_nrf52840_zmk.overlay",
+                "zmk-halcyon-module/boards/shields/mod_battery_lipo/mod_battery_lipo.overlay",
+                "zmk-halcyon-module/boards/shields/mod_battery_lipo/boards/halcyon_wireless_nrf52840_zmk.overlay",
+                "zmk-halcyon-module/boards/shields/mod_display_epaper/mod_display_epaper_forest.overlay",
+                "../../config/halcyon_kyria.keymap"
+              ],
+              "includePaths": [
+                "zmk-halcyon-module/dts",
+                "zmk/app/module/include",
+                "zmk/app/module/dts",
+                "zmk/app/include",
+                "zmk/app/dts/common",
+                "zmk/app/dts",
+                "zephyr/include",
+                "zephyr/include/zephyr",
+                "zephyr/dts/common",
+                "zephyr/dts/arm",
+                "zephyr/dts"
+              ],
+              "zephyrBindings": [
+                "zmk-halcyon-module/dts/bindings",
+                "zmk/app/module/dts/bindings",
+                "zmk/app/dts/bindings",
+                "zephyr/dts/bindings"
+              ]
+            }
+          ]
+        }
+      }
     }
+  },
+  "file_types": {
+    "devicetree": ["keymap"]
   }
 }
