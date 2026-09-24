@@ -76,7 +76,7 @@
         NOSHIFT(ns_lbkt, LBKT)
         NOSHIFT(ns_rbkt, RBKT)
 
-        /* Mo FUN, or NUM when shifted. */
+        /* FUN; NUM when shifted. */
         fun_num: fun_num {
             compatible = "zmk,behavior-mod-morph";
             #binding-cells = <0>;
@@ -85,7 +85,7 @@
             keep-mods = <(MOD_LSFT|MOD_RSFT)>;
         };
 
-        /* W_BSPC: W, but backspace while alt is held. */
+        /* W; bkspc when alt is held. */
         w_bspc: w_bspc {
             compatible = "zmk,behavior-mod-morph";
             #binding-cells = <0>;
@@ -93,7 +93,7 @@
             mods = <(MOD_LALT|MOD_RALT)>;
         };
 
-        /* Mo NUM; KC_BSLS on tap. */
+        /* NUM; bkspc on tap. */
         num_bsls: num_bsls {
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
@@ -102,7 +102,7 @@
             bindings = <&mo>, <&kp>;
         };
 
-        /* Mo _EXT, KC_SPC on tap. */
+        /* EXT; space on tap. */
         spc_ext: spc_ext {
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
@@ -111,6 +111,7 @@
             bindings = <&mo>, <&kp>;
         };
 
+        // toggle the mac layer.
         tog_on: tog_on {
             compatible = "zmk,behavior-toggle-layer";
             #binding-cells = <1>;
@@ -125,12 +126,14 @@
             locking;
         };
 
+        // toggle the game layer
         game_tog: game_tog {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
             bindings = <&tog GAME &tog_off MAC>;
         };
 
+        // toggle game layer AND press key
         game_spc: game_spc {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
@@ -143,6 +146,7 @@
             bindings = <&tog GAME &tog_off MAC &kp ENTER>;
         };
 
+        // Actual scroll behavior 
         inc_dec_scroll: inc_dec_scroll {
             compatible = "zmk,behavior-sensor-rotate-var";
             #sensor-binding-cells = <2>;
@@ -164,7 +168,7 @@
 
 &none      &none  &none  &none     &none                                                                              &none     &none      &none    &none     &none
             >;
-            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN>;
+            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_DN C_VOL_UP>;
         };
 
         /* Ctrl/Meta swap. */
@@ -178,7 +182,7 @@
 
 &trans    &trans  &trans  &trans     &trans                                                    &trans  &trans  &trans  &trans  &trans
             >;
-            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN>;
+            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_DN C_VOL_UP>;
         };
 
         game_layer {
@@ -191,7 +195,7 @@
 
 &trans     &trans  &trans   &trans     &trans                                                                     &trans     &trans     &trans  &trans  &trans
             >;
-            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN>;
+            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_DN C_VOL_UP>;
         };
 
         num_layer {
@@ -204,7 +208,7 @@
 
 &trans     &trans     &trans    &trans    &trans                                                                            &trans  &trans  &trans  &trans     &trans
             >;
-            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN>;
+            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_DN C_VOL_UP>;
         };
 
         sym_layer {
@@ -217,7 +221,7 @@
 
 &trans    &trans     &trans    &trans    &trans                                                                         &trans     &trans     &trans    &trans    &trans
             >;
-            sensor-bindings = <&inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP>;
+            sensor-bindings = <&inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_UP SCRL_ENC_DOWN>;
         };
 
         ext_layer {
@@ -230,7 +234,7 @@
 
 &trans   &trans     &trans     &trans        &trans                                                                &trans    &trans     &trans     &trans     &trans
             >;
-            sensor-bindings = <&inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP>;
+            sensor-bindings = <&inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_UP SCRL_ENC_DOWN>;
         };
 
         fun_layer {
@@ -243,7 +247,7 @@
 
 &trans  &trans    &trans      &trans            &trans                                                               &trans  &trans  &trans  &trans   &trans
             >;
-            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN>;
+            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_DN C_VOL_UP>;
         };
 
         adj_layer {
@@ -256,7 +260,7 @@
 
 &trans        &trans           &trans           &trans           &trans                                                                                          &trans          &trans          &trans           &trans  &trans
             >;
-            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN>;
+            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_DN C_VOL_UP>;
         };
 
         mac_ext_layer {
@@ -269,7 +273,7 @@
 
 &trans  &trans     &trans     &trans     &trans                                                         &trans  &trans  &trans  &trans  &trans
             >;
-            sensor-bindings = <&inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP>;
+            sensor-bindings = <&inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_DOWN SCRL_ENC_UP &inc_dec_scroll SCRL_ENC_UP SCRL_ENC_DOWN>;
         };
 
         mac_fun_layer {
@@ -282,7 +286,7 @@
 
 &trans  &trans     &trans  &trans  &trans                                                      &trans  &trans  &trans  &trans  &trans
             >;
-            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN>;
+            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp C_VOL_DN C_VOL_UP>;
         };
     };
 };
