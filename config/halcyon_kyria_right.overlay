@@ -9,3 +9,11 @@
      */
     steps = <40>;
 };
+
+/*
+ * Battery calibration: full charge read 4140-4147 mV (93%) with the nominal
+ * 30k/10k divider. Scale so it reads ~4200 mV (100%).
+ */
+&vbatt {
+    full-ohms = <30435>;
+};
