@@ -7,10 +7,10 @@ manifest:
   projects:
     - name: zmk
       remote: splitkb
-      revision: main+halcyon-fixes
+      revision: 80cf18d57c52a8ed4badc7f330cec7eada6521d8 # main+halcyon-fixes, 2026-11-04
       import: app/west.yml
     - name: zmk-halcyon-module
       remote: splitkb
-      revision: main
+      revision: 0b95571b332862a6fda8d62a0f0a4c6ccd7895dc # main, 2026-11-04
   self:
     path: config

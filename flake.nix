@@ -29,7 +29,7 @@
 
         board = "halcyon_wireless//zmk";
 
-        zephyrDepsHash = "sha256-npvEASa46KYvO7SCwrBoDsLQSA7KOWAyd3ur5xGTa9g=";
+        zephyrDepsHash = "sha256-jq+XwjqfDFg+Artl+H1rRoup08x8EGIIxO5+Uk/fjsE=";
 
         meta = {
           description = "ZMK firmware for a SplitKB Halcyon Kyria (wireless)";
